@@ -1,0 +1,23 @@
+sudo: required
+services: docker
+before_install:
+    - docker --version # for verification
+language: generic
+jobs:
+  include:
+    - stage: build docker images
+      env:
+        - TAG=$(grep "ENV VERSION" Dockerfile | awk 'NF>1{print $NF}')
+        - IMAGENAME=sdelrio/git-daemon
+      script:
+      - echo $TAG
+      # x86 build
+      - docker build -t $IMAGENAME -f Dockerfile .
+      - >
+        if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+          docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+          docker tag $IMAGENAME $IMAGENAME:$TAG
+          docker push $IMAGENAME:$TAG
+          docker push $IMAGENAME
+        fi
+
